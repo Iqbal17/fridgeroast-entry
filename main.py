@@ -63,19 +63,39 @@ ENTRY = "My fridge's ice maker has been 'making ice' for six hours. One cube. It
 MAX_CHARS = 200
 
 
+def validate_line(line):
+    """Gate guard: the entry must be a non-blank line of 1-200 chars."""
+    if not isinstance(line, str):
+        raise ValueError("entry must be a string")
+    if not (1 <= len(line) <= MAX_CHARS):
+        raise ValueError("entry must be 1-200 characters")
+    if not line.strip():
+        raise ValueError("entry must not be only whitespace")
+    return line
+
+
 def entry_path():
     """Resolve the output path, preferring $MAKEFUN_OUTPUT_DIR."""
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR") or "/output"
     return os.path.join(out_dir, "entry.txt")
 
 
+def verify_written(path):
+    """Write-back self-check: entry.txt must hold exactly the line + newline."""
+    with open(path, "r", encoding="utf-8") as f:
+        written = f.read()
+    if written != ENTRY + "\n":
+        raise ValueError("written entry.txt does not match the entry line")
+    return written
+
+
 def main():
-    assert 1 <= len(ENTRY) <= MAX_CHARS, "entry must be 1-200 chars"
-    assert ENTRY.strip(), "entry must not be only whitespace"
+    validate_line(ENTRY)
     path = entry_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         f.write(ENTRY + "\n")
+    verify_written(path)
 
 
 if __name__ == "__main__":
